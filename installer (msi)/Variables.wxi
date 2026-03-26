@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+    <?define ProductName = "Lauchwatch" ?>
+    <?define Manufacturer = "KM310" ?>
+    <?define Version = "1.0.0" ?>
+    <?define InstallDir = "Lauchwatch" ?>
+    <?define ShortcutName = "Lauchwatch_x86" ?>
+</Include>
