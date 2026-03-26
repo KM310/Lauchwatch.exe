@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Product Id="*" Name="LauchWatch" Language="1031" Version="1.0.0.0" Manufacturer="Julius" UpgradeCode="PUT-GUID-HERE">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+    <MediaTemplate />
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <UIRef Id="WixUI_InstallDir" />
+
+    <Feature Id="Main" Title="LauchWatch" Level="1">
+      <ComponentGroupRef Id="Files" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="LauchWatch" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Files" Directory="INSTALLFOLDER">
+
+      <Component Id="Exe" Guid="PUT-GUID-HERE">
+        <File Id="ExeFile"
+              Name="Lauchwatch.exe"
+              Source="https://raw.githubusercontent.com/KM310/Lauchwatch.exe/main/Lauchwatch.exe"
+              DownloadUrl="https://raw.githubusercontent.com/KM310/Lauchwatch.exe/main/Lauchwatch.exe" />
+      </Component>
+
+      <Component Id="Dll" Guid="PUT-GUID-HERE">
+        <File Id="DllFile"
+              Name="icon.dll"
+              Source="https://raw.githubusercontent.com/KM310/Lauchwatch.exe/main/icon.dll"
+              DownloadUrl="https://raw.githubusercontent.com/KM310/Lauchwatch.exe/main/icon.dll" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>
