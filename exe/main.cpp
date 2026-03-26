@@ -1,28 +1,61 @@
 #include <windows.h>
-#include <wrl.h>
-#include <wil/com.h>
 #include "WebView2.h"
 
-using namespace Microsoft::WRL;
-
-HWND g_hWnd;
-wil::com_ptr<ICoreWebView2Controller> controller;
-wil::com_ptr<ICoreWebView2> webview;
+HWND g_hWnd = nullptr;
+ICoreWebView2Controller* g_controller = nullptr;
+ICoreWebView2* g_webview = nullptr;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
     case WM_SIZE:
-        if (controller)
-            controller->put_Bounds({ 0, 0, LOWORD(lParam), HIWORD(lParam) });
+        if (g_controller)
+        {
+            RECT r;
+            GetClientRect(hWnd, &r);
+            g_controller->put_Bounds(r);
+        }
         break;
 
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
     }
+
     return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+void InitWebView2()
+{
+    CreateCoreWebView2EnvironmentWithOptions(
+        nullptr, nullptr, nullptr,
+        Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
+            [](HRESULT hr, ICoreWebView2Environment* env) -> HRESULT
+            {
+                env->CreateCoreWebView2Controller(
+                    g_hWnd,
+                    Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
+                        [](HRESULT hr, ICoreWebView2Controller* controller) -> HRESULT
+                        {
+                            g_controller = controller;
+
+                            controller->get_CoreWebView2(&g_webview);
+
+                            RECT r;
+                            GetClientRect(g_hWnd, &r);
+                            controller->put_Bounds(r);
+
+                            g_webview->Navigate(L"https://lauchwatch.base44.app/");
+
+                            return S_OK;
+                        }
+                    ).Get()
+                );
+                return S_OK;
+            }
+        ).Get()
+    );
 }
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
@@ -38,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInst;
-    wc.lpszClassName = L"LauchWatch";
+    wc.lpszClassName = L"LauchWatchWindow";
     wc.hIcon = hIcon;
 
     RegisterClass(&wc);
@@ -54,36 +87,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     ShowWindow(g_hWnd, SW_SHOW);
 
-    // WebView2 starten
-    CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, nullptr, nullptr,
-        Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
-            [](HRESULT, ICoreWebView2Environment* env) -> HRESULT
-            {
-                env->CreateCoreWebView2Controller(
-                    g_hWnd,
-                    Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
-                        [](HRESULT, ICoreWebView2Controller* ctrl) -> HRESULT
-                        {
-                            controller = ctrl;
-                            controller->get_CoreWebView2(&webview);
+    InitWebView2();
 
-                            RECT r;
-                            GetClientRect(g_hWnd, &r);
-                            controller->put_Bounds(r);
-
-                            webview->Navigate(L"https://lauchwatch.base44.app/");
-
-                            return S_OK;
-                        }
-                    ).Get()
-                );
-                return S_OK;
-            }
-        ).Get()
-    );
-
-    // Message Loop
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -93,3 +98,4 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     return 0;
 }
+
