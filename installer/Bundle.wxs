@@ -1,0 +1,15 @@
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Bundle Name="LauchWatch Installer" Version="1.0.0.0" Manufacturer="Julius">
+    <Chain>
+
+      <ExePackage
+        Id="WebView2"
+        SourceFile="MicrosoftEdgeWebView2Setup.exe"
+        DetectCondition="WEBVIEW2INSTALLED"
+        Vital="yes" />
+
+      <MsiPackage SourceFile="LauchWatch.msi" />
+
+    </Chain>
+  </Bundle>
+</Wix>
