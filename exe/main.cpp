@@ -6,69 +6,75 @@ ICoreWebView2Controller* g_controller = nullptr;
 ICoreWebView2* g_webview = nullptr;
 
 // ---------------------------
-// Callback-Klasse 1: Environment
+// COM Helper
 // ---------------------------
-class EnvCompletedHandler :
-    public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+template<typename T>
+class ComBase : public T
 {
 public:
-    ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
-    ULONG STDMETHODCALLTYPE Release() override { return 1; }
+    ULONG refCount = 1;
+
+    ULONG STDMETHODCALLTYPE AddRef() override { return ++refCount; }
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        ULONG r = --refCount;
+        if (r == 0) delete this;
+        return r;
+    }
+
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override
     {
-        if (riid == __uuidof(IUnknown) ||
-            riid == __uuidof(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler))
+        if (riid == __uuidof(IUnknown) || riid == __uuidof(T))
         {
             *ppv = this;
+            AddRef();
             return S_OK;
         }
         *ppv = nullptr;
         return E_NOINTERFACE;
     }
+};
 
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT hr, ICoreWebView2Environment* env) override
+// ---------------------------
+// Controller Callback
+// ---------------------------
+class ControllerHandler :
+    public ComBase<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>
+{
+public:
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT hr, ICoreWebView2Controller* controller) override
     {
-        env->CreateCoreWebView2Controller(
-            g_hWnd,
-            new ControllerCompletedHandler()
-        );
+        if (FAILED(hr)) return hr;
+
+        g_controller = controller;
+        g_controller->AddRef();
+
+        g_controller->get_CoreWebView2(&g_webview);
+
+        RECT r;
+        GetClientRect(g_hWnd, &r);
+        g_controller->put_Bounds(r);
+
+        g_webview->Navigate(L"https://lauchwatch.base44.app/");
+
         return S_OK;
     }
+};
 
-    // ---------------------------
-    // Callback-Klasse 2: Controller
-    // ---------------------------
-    class ControllerCompletedHandler :
-        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
+// ---------------------------
+// Environment Callback
+// ---------------------------
+class EnvHandler :
+    public ComBase<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>
+{
+public:
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT hr, ICoreWebView2Environment* env) override
     {
-    public:
-        ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
-        ULONG STDMETHODCALLTYPE Release() override { return 1; }
-        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override
-        {
-            if (riid == __uuidof(IUnknown) ||
-                riid == __uuidof(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler))
-            {
-                *ppv = this;
-                return S_OK;
-            }
-            *ppv = nullptr;
-            return E_NOINTERFACE;
-        }
+        if (FAILED(hr)) return hr;
 
-        HRESULT STDMETHODCALLTYPE Invoke(HRESULT hr, ICoreWebView2Controller* controller) override
-        {
-            g_controller = controller;
-            controller->get_CoreWebView2(&g_webview);
-
-            RECT r;
-            GetClientRect(g_hWnd, &r);
-            controller->put_Bounds(r);
-
-            g_webview->Navigate(L"https://lauchwatch.base44.app/");
-            return S_OK;
-        }
-    };
+        env->CreateCoreWebView2Controller(g_hWnd, new ControllerHandler());
+        return S_OK;
+    }
 };
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -117,7 +123,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
     // WebView2 starten
     CreateCoreWebView2EnvironmentWithOptions(
         nullptr, nullptr, nullptr,
-        new EnvCompletedHandler()
+        new EnvHandler()
     );
 
     MSG msg;
@@ -129,3 +135,4 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     return 0;
 }
+
