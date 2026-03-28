@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Product Id="*" 
+           Name="Lauchwatch" 
+           Language="1033" 
+           Version="1.0.0.0" 
+           Manufacturer="KM310" 
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
+
+    <MediaTemplate EmbedCab="yes"/>
+
+    <!-- GUI -->
+    <UI>
+      <UIRef Id="WixUI_InstallDir"/>
+    </UI>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf"/>
+
+    <!-- Ordnerstruktur -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Lauchwatch">
+
+          <!-- EXE -->
+          <Component Id="ExeComponent" Guid="*">
+            <File Id="ExeFile" Source="LauchwatchX86.exe" KeyPath="yes"/>
+          </Component>
+
+          <!-- DLL -->
+          <Component Id="IconComponent" Guid="*">
+            <File Id="IconDll" Source="Icon.dll"/>
+          </Component>
+
+          <!-- WebView Installer -->
+          <Component Id="WebViewComponent" Guid="*">
+            <File Id="WebViewInstaller" Source="MicrosoftEdgeWebView2RuntimeInstallerX86.exe"/>
+          </Component>
+
+        </Directory>
+      </Directory>
+
+      <!-- Desktop -->
+      <Directory Id="DesktopFolder">
+
+        <!-- Shortcut Component (FIXED) -->
+        <Component Id="ShortcutComponent" Guid="*">
+          <Shortcut Id="DesktopShortcut"
+                    Name="Lauchwatch"
+                    Target="[INSTALLFOLDER]LauchwatchX86.exe"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon"
+                    Advertise="no"/>
+
+          <RegistryValue Root="HKCU"
+                         Key="Software\Lauchwatch"
+                         Name="installed"
+                         Type="integer"
+                         Value="1"
+                         KeyPath="yes"/>
+        </Component>
+
+      </Directory>
+
+    </Directory>
+
+    <!-- Icon -->
+    <Icon Id="AppIcon" SourceFile="Icon.dll"/>
+    <Property Id="ARPPRODUCTICON" Value="AppIcon"/>
+
+    <!-- Feature -->
+    <Feature Id="MainFeature" Title="Lauchwatch" Level="1">
+      <ComponentRef Id="ExeComponent"/>
+      <ComponentRef Id="IconComponent"/>
+      <ComponentRef Id="WebViewComponent"/>
+      <ComponentRef Id="ShortcutComponent"/>
+    </Feature>
+
+    <!-- WebView2 Check -->
+    <Property Id="WEBVIEW2INSTALLED">
+      <RegistrySearch Id="WebView2Check"
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+        Name="pv"
+        Type="raw"/>
+    </Property>
+
+    <!-- WebView installieren -->
+    <CustomAction Id="InstallWebView2"
+      FileKey="WebViewInstaller"
+      ExeCommand="/silent /install"
+      Execute="deferred"
+      Return="ignore"
+      Impersonate="no"/>
+
+    <InstallExecuteSequence>
+      <Custom Action="InstallWebView2" After="InstallFiles">
+        NOT WEBVIEW2INSTALLED
+      </Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+</Wix>
