@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <shlobj.h> // Für AppData Pfad
+#include <string>
 #include "WebView2.h"
 
 HWND g_hWnd = nullptr;
@@ -77,6 +79,9 @@ public:
     }
 };
 
+// ---------------------------
+// Window Proc
+// ---------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (msg == WM_SIZE && g_controller)
@@ -92,6 +97,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+// ---------------------------
+// AppData Pfad holen
+// ---------------------------
+std::wstring GetAppDataPath()
+{
+    wchar_t path[MAX_PATH];
+    SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path);
+
+    std::wstring fullPath = path;
+    fullPath += L"\\Lauchwatch";
+
+    // Ordner erstellen falls nicht vorhanden
+    CreateDirectoryW(fullPath.c_str(), NULL);
+
+    return fullPath;
+}
+
+// ---------------------------
+// WinMain
+// ---------------------------
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 {
     // Icon aus DLL laden
@@ -120,9 +145,13 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     ShowWindow(g_hWnd, SW_SHOW);
 
-    // WebView2 starten
+    // 🔥 WICHTIG: eigener Datenpfad
+    std::wstring userDataPath = GetAppDataPath();
+
     CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, nullptr, nullptr,
+        nullptr,
+        userDataPath.c_str(), // <-- FIX
+        nullptr,
         new EnvHandler()
     );
 
@@ -135,4 +164,3 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     return 0;
 }
-
