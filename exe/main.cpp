@@ -145,7 +145,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
     ShowWindow(g_hWnd, SW_SHOW);
 
-    // 🔥 WICHTIG: eigener Datenpfad
+    // eigener Datenpfad
     std::wstring userDataPath = GetAppDataPath();
 
     CreateCoreWebView2EnvironmentWithOptions(
